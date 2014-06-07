@@ -19,6 +19,7 @@ Things that are still required:
 4. establish a list of error codes
 5. check that all lines are connected somehow.
 6. check that the origin point is somewhere reasonable relative to the drawing
+7. write another python script which puts multiple designs into one dxf file so they can all be machined at once
 
 
 ## Installation
