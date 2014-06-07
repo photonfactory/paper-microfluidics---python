@@ -57,6 +57,4 @@ for e in modelspace:
             for i in range(0, int(math.floor(radius/0.1))-1):
                 modelspace.add_circle(center, radius-0.1*(i+1))
 
-
-
 dwg.saveas(file_name.replace('.dxf', '') + "_converted.dxf")
