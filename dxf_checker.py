@@ -7,7 +7,37 @@ laser_spot_diameter = 0.1  # mm - used as distance between concentric circles fo
 max_permitted_boundary_square = 50.0  # mm
 boundary_square_expected_color = 240  # 240 = red
 well_expected_color = 240
-well_expected_max_radius = 6
+well_expected_max_radius = 5
+
+# function for finding the bounds of an ARC entity (there is almost certainly a smarter way of doing this...)
+def findArcMaxMin(center_point, radius_size, start_angle, end_angle):
+    max_and_min_points = []  # [max_x max_y min_x min_y]
+    if 0 <= start_angle <= 90:
+        if end_angle > start_angle and 0 <= end_angle <= 90:
+            max_and_min_points.append(math.cos(start_angle)*radius_size + center_point[0])
+            max_and_min_points.append(math.sin(end_angle)*radius_size + center_point[1])
+            max_and_min_points.append(math.cos(end_angle)*radius_size + center_point[0])
+            max_and_min_points.append(math.sin(start_angle)*radius_size + center_point[1])
+        elif end_angle > start_angle and 90 < end_angle <= 180:
+            max_and_min_points.append(math.cos(start_angle)*radius_size + center_point[0])
+            max_and_min_points.append(radius_size + center_point[1])
+            # two possibilities for min y
+        elif end_angle > start_angle and 180 < end_angle <= 270:
+            max_and_min_points.append(math.cos(start_angle)*radius_size + center_point[0])
+            max_and_min_points.append(radius_size + center_point[1])
+        elif end_angle > start_angle and 270 < end_angle <= 360:
+            max_and_min_points.append(math.cos(start_angle)*radius_size + center_point[0])
+            max_and_min_points.append(radius_size + center_point[1])
+        elif end_angle < start_angle and 0 <= end_angle <= 90:
+            max_and_min_points.append(math.cos(end_angle)*radius_size + center_point[0])
+            max_and_min_points.append(math.sin(start_angle)*radius_size + center_point[1])
+    elif 90 < start_angle <= 180:
+        pass
+    elif 180 < start_angle <= 270:
+        pass
+    elif 270 < start_angle <= 360:
+        pass
+    return max_and_min_points
 
 dwg = ezdxf.readfile(file_name)
 modelspace = dwg.modelspace()
@@ -26,7 +56,8 @@ if len(boundary_square_points) == 4:
         and boundary_square_max[1]-boundary_square_min[1] > max_permitted_boundary_square + 1:
         print "detected boundary size: " + str(boundary_square_max[0]-boundary_square_min[0]) \
         + " mm x " + str(boundary_square_max[1]-boundary_square_min[1]) + " mm"
-        print "ERROR: boundary square too large - should be less than %s mm x %s mm" % (max_permitted_boundary_square, max_permitted_boundary_square)
+        print "ERROR: boundary square too large - should be less than %s mm x %s mm" \
+              % (max_permitted_boundary_square, max_permitted_boundary_square)
 else:
     print "ERROR: no boundary square detected"
 
@@ -81,8 +112,23 @@ for e in modelspace:
             or (center_point[0] + radius_size) > boundary_square_max[0] \
             or (center_point[1] + radius_size) > boundary_square_max[1]:
             print "ERROR: CIRCLE entity outside of boundary square"
+    # check all ARC entities
+    elif e.dxftype() == "ARC":
+        center_point = e.get_dxf_attrib("center")
+        radius_size = e.get_dxf_attrib("radius")
+        start_angle = e.get_dxf_attrib("start_angle")
+        end_angle = e.get_dxf_attrib("end_angle")
+        # print "%s, %s, %s, %s" % (center_point, radius_size, start_angle, end_angle)
+        max_point = findArcMaxMin(center_point, radius_size, start_angle, end_angle)
+        print max_point
+
+
+
 
 # attempt to detect discontinuities
+pass
+
+# count entities
 pass
 
 # locate and draw wells

@@ -9,7 +9,7 @@ Currently the script performs the following operations:
 
 1. Deletes all POLYLINE entities and replaces them with LINE entities.
 2. Checks that only ARC, CIRCLE, VIEWPORT and LINE entities are present in the file
-3. Locates well locations and fills them in with concentric circles
+3. Locates well locations (wells are red circles with radius less than 5 mm) and fills them in with concentric circles
 
 Things that are still required:
 
