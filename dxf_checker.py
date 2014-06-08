@@ -2,41 +2,123 @@ import ezdxf
 import math
 
 # parameter settings
-file_name = "error.dxf"
+file_name = "arc_error.dxf"
 laser_spot_diameter = 0.1  # mm - used as distance between concentric circles for filling in wells.
 max_permitted_boundary_square = 50.0  # mm
 boundary_square_expected_color = 240  # 240 = red
 well_expected_color = 240
 well_expected_max_radius = 5
 
+def find_max_x_y(points):
+    x_values = []
+    y_values = []
+    for p in points:
+        x_values.append(p[0])
+        y_values.append(p[1])
+    max_min_array = [[min(x_values), min(y_values)], [max(x_values), max(y_values)]]
+    return max_min_array
+
+def get_arc_start_finish_points(center_point, radius_size, start_angle, end_angle):
+    start_angle_radians = start_angle*math.pi/180
+    end_angle_radians = end_angle*math.pi/180
+    start_point = [center_point[0] + math.cos(start_angle_radians)*radius_size, center_point[1] + math.sin(start_angle_radians)*radius_size]
+    end_point = [center_point[0] + math.cos(end_angle_radians)*radius_size, center_point[1] + math.sin(end_angle_radians)*radius_size]
+    start_and_finish_array = [start_point, end_point]
+    return start_and_finish_array
+
+
 # function for finding the bounds of an ARC entity (there is almost certainly a smarter way of doing this...)
 def findArcMaxMin(center_point, radius_size, start_angle, end_angle):
-    max_and_min_points = []  # [max_x max_y min_x min_y]
+    # find extreme points if arc was a circle
+    a = [center_point[0], center_point[1]+radius_size]
+    b = [center_point[0]-radius_size, center_point[1]]
+    c = [center_point[0], center_point[1]-radius_size]
+    d = [center_point[0]+radius_size, center_point[1]]
+    points_to_consider = get_arc_start_finish_points(center_point, radius_size, start_angle, end_angle)
     if 0 <= start_angle <= 90:
-        if end_angle > start_angle and 0 <= end_angle <= 90:
-            max_and_min_points.append(math.cos(start_angle)*radius_size + center_point[0])
-            max_and_min_points.append(math.sin(end_angle)*radius_size + center_point[1])
-            max_and_min_points.append(math.cos(end_angle)*radius_size + center_point[0])
-            max_and_min_points.append(math.sin(start_angle)*radius_size + center_point[1])
-        elif end_angle > start_angle and 90 < end_angle <= 180:
-            max_and_min_points.append(math.cos(start_angle)*radius_size + center_point[0])
-            max_and_min_points.append(radius_size + center_point[1])
-            # two possibilities for min y
-        elif end_angle > start_angle and 180 < end_angle <= 270:
-            max_and_min_points.append(math.cos(start_angle)*radius_size + center_point[0])
-            max_and_min_points.append(radius_size + center_point[1])
-        elif end_angle > start_angle and 270 < end_angle <= 360:
-            max_and_min_points.append(math.cos(start_angle)*radius_size + center_point[0])
-            max_and_min_points.append(radius_size + center_point[1])
-        elif end_angle < start_angle and 0 <= end_angle <= 90:
-            max_and_min_points.append(math.cos(end_angle)*radius_size + center_point[0])
-            max_and_min_points.append(math.sin(start_angle)*radius_size + center_point[1])
+        if 0 <= end_angle <= 90:
+            max_and_min_points = find_max_x_y(points_to_consider)
+        elif 90 < end_angle <=180:
+            points_to_consider.append(a)
+            max_and_min_points = find_max_x_y(points_to_consider)
+        elif 180 < end_angle <=270:
+            points_to_consider.append(a)
+            points_to_consider.append(b)
+            max_and_min_points = find_max_x_y(points_to_consider)
+        elif 270 < end_angle <= 360:
+            points_to_consider.append(a)
+            points_to_consider.append(b)
+            points_to_consider.append(c)
+            max_and_min_points = find_max_x_y(points_to_consider)
+        elif 0 <= end_angle < start_angle:
+            points_to_consider.append(a)
+            points_to_consider.append(b)
+            points_to_consider.append(c)
+            points_to_consider.append(d)
+            max_and_min_points = find_max_x_y(points_to_consider)
     elif 90 < start_angle <= 180:
-        pass
+        if 90 < end_angle <= 180:
+            max_and_min_points = find_max_x_y(points_to_consider)
+        elif 180 < end_angle <=270:
+            points_to_consider.append(b)
+            max_and_min_points = find_max_x_y(points_to_consider)
+        elif 270 < end_angle <=360:
+            points_to_consider.append(b)
+            points_to_consider.append(c)
+            max_and_min_points = find_max_x_y(points_to_consider)
+        elif 0 < end_angle <= 90:
+            points_to_consider.append(b)
+            points_to_consider.append(c)
+            points_to_consider.append(d)
+            max_and_min_points = find_max_x_y(points_to_consider)
+        elif 90 <= end_angle < start_angle:
+            points_to_consider.append(b)
+            points_to_consider.append(c)
+            points_to_consider.append(d)
+            points_to_consider.append(a)
+            max_and_min_points = find_max_x_y(points_to_consider)
     elif 180 < start_angle <= 270:
-        pass
+        if 180 < end_angle <= 270:
+            max_and_min_points = find_max_x_y(points_to_consider)
+        elif 270 < end_angle <=360:
+            points_to_consider.append(c)
+            max_and_min_points = find_max_x_y(points_to_consider)
+        elif 0 < end_angle <=90:
+            points_to_consider.append(c)
+            points_to_consider.append(d)
+            max_and_min_points = find_max_x_y(points_to_consider)
+        elif 90 < end_angle <= 180:
+            points_to_consider.append(c)
+            points_to_consider.append(d)
+            points_to_consider.append(a)
+            max_and_min_points = find_max_x_y(points_to_consider)
+        elif 180 <= end_angle < start_angle:
+            points_to_consider.append(c)
+            points_to_consider.append(d)
+            points_to_consider.append(a)
+            points_to_consider.append(b)
+            max_and_min_points = find_max_x_y(points_to_consider)
     elif 270 < start_angle <= 360:
-        pass
+        if 270 < end_angle <= 360:
+            max_and_min_points = find_max_x_y(points_to_consider)
+        elif 0 < end_angle <=90:
+            points_to_consider.append(d)
+            max_and_min_points = find_max_x_y(points_to_consider)
+        elif 90 < end_angle <=180:
+            points_to_consider.append(d)
+            points_to_consider.append(a)
+            max_and_min_points = find_max_x_y(points_to_consider)
+        elif 180 < end_angle <= 270:
+            points_to_consider.append(d)
+            points_to_consider.append(a)
+            points_to_consider.append(b)
+            max_and_min_points = find_max_x_y(points_to_consider)
+        elif 270 <= end_angle < start_angle:
+            points_to_consider.append(d)
+            points_to_consider.append(a)
+            points_to_consider.append(b)
+            points_to_consider.append(c)
+            max_and_min_points = find_max_x_y(points_to_consider)
     return max_and_min_points
 
 dwg = ezdxf.readfile(file_name)
@@ -119,8 +201,12 @@ for e in modelspace:
         start_angle = e.get_dxf_attrib("start_angle")
         end_angle = e.get_dxf_attrib("end_angle")
         # print "%s, %s, %s, %s" % (center_point, radius_size, start_angle, end_angle)
-        max_point = findArcMaxMin(center_point, radius_size, start_angle, end_angle)
-        print max_point
+        max_min_points = findArcMaxMin(center_point, radius_size, start_angle, end_angle)
+        if max_min_points[0][0] < boundary_square_min[0] \
+                or max_min_points[0][1] < boundary_square_min[0] \
+                or max_min_points[1][0] > boundary_square_max[0] \
+                or max_min_points[1][1] > boundary_square_max[1]:
+            print "ERROR: ARC entity outside of bonudary square"
 
 
 
