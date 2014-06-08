@@ -2,7 +2,7 @@ import ezdxf
 import math
 
 # parameter settings
-file_name = "test.dxf"
+file_name = "square.dxf"
 laser_spot_diameter = 0.1  # mm - used as distance between concentric circles for filling in wells.
 max_permitted_boundary_square = 50.0  # mm
 boundary_square_expected_color = 240  # 240 = red
@@ -132,12 +132,11 @@ for e in modelspace:
             for p in e.points():
                 boundary_square_points.append(p)
 if len(boundary_square_points) == 4:
-    boundary_square_min = min(boundary_square_points)
-    boundary_square_max = max(boundary_square_points)
-    if boundary_square_max[0]-boundary_square_min[0] > max_permitted_boundary_square + 1 \
-        and boundary_square_max[1]-boundary_square_min[1] > max_permitted_boundary_square + 1:
-        print "detected boundary size: " + str(boundary_square_max[0]-boundary_square_min[0]) \
-        + " mm x " + str(boundary_square_max[1]-boundary_square_min[1]) + " mm"
+    square_max_min = find_max_x_y(boundary_square_points)
+    if square_max_min[1][0]-square_max_min[0][0] > max_permitted_boundary_square + 1 \
+        or square_max_min[1][1]-square_max_min[0][1] > max_permitted_boundary_square + 1:
+        print "detected boundary size: " + str(square_max_min[1][0]-square_max_min[0][0]) \
+        + " mm x " + str(square_max_min[1][1]-square_max_min[0][1]) + " mm"
         print "ERROR: boundary square too large - should be less than %s mm x %s mm" \
               % (max_permitted_boundary_square, max_permitted_boundary_square)
 else:
@@ -182,19 +181,19 @@ if boundary_square_found:
         if e.dxftype() == "LINE":
             start_point = e.get_dxf_attrib("start")
             end_point = e.get_dxf_attrib("end")
-            if start_point[0] < boundary_square_min[0] \
-                or start_point[1] < boundary_square_min[1] \
-                or start_point[0] > boundary_square_max[0] \
-                or start_point[1] > boundary_square_max[1]:
+            if start_point[0] < square_max_min[0][0] \
+                or start_point[1] < square_max_min[0][1] \
+                or start_point[0] > square_max_min[1][0] \
+                or start_point[1] > square_max_min[1][1]:
                 print "ERROR: LINE entity outside of boundary square"
         # check all CIRCLE entities
         elif e.dxftype() == "CIRCLE":
             center_point = e.get_dxf_attrib("center")
             radius_size = e.get_dxf_attrib("radius")
-            if (center_point[0] - radius_size) < boundary_square_min[0] \
-                or (center_point[1] - radius_size) < boundary_square_min[1] \
-                or (center_point[0] + radius_size) > boundary_square_max[0] \
-                or (center_point[1] + radius_size) > boundary_square_max[1]:
+            if (center_point[0] - radius_size) < square_max_min[0][0] \
+                or (center_point[1] - radius_size) < square_max_min[0][1] \
+                or (center_point[0] + radius_size) > square_max_min[1][0] \
+                or (center_point[1] + radius_size) > square_max_min[1][1]:
                 print "ERROR: CIRCLE entity outside of boundary square"
         # check all ARC entities
         elif e.dxftype() == "ARC":
@@ -204,10 +203,10 @@ if boundary_square_found:
             end_angle = e.get_dxf_attrib("end_angle")
             # print "%s, %s, %s, %s" % (center_point, radius_size, start_angle, end_angle)
             max_min_points = findArcMaxMin(center_point, radius_size, start_angle, end_angle)
-            if max_min_points[0][0] < boundary_square_min[0] \
-                    or max_min_points[0][1] < boundary_square_min[0] \
-                    or max_min_points[1][0] > boundary_square_max[0] \
-                    or max_min_points[1][1] > boundary_square_max[1]:
+            if max_min_points[0][0] < square_max_min[0][0] \
+                    or max_min_points[0][1] < square_max_min[0][0] \
+                    or max_min_points[1][0] > square_max_min[1][0] \
+                    or max_min_points[1][1] > square_max_min[1][1]:
                 print "ERROR: ARC entity outside of bonudary square"
 
 
