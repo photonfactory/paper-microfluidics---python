@@ -2,15 +2,12 @@ import ezdxf
 import math
 import sys
 
-
 if not len(sys.argv) == 2:
-    print "ERROR: no filename entered as argument"
+    print "WARNING: no filename entered as argument"
     print "defaulting to test.dxf"
-    file_name = "test.dxf"
+    file_name = "far_from_origin.dxf"
 else:
     file_name = str(sys.argv[1])
-
-
 
 # parameter settings
 laser_spot_diameter = 0.1  # mm - used as distance between concentric circles for filling in wells.
@@ -18,7 +15,14 @@ max_permitted_boundary_square = 50.0  # mm
 boundary_square_expected_color = 240  # 240 = red
 well_expected_color = 240
 well_expected_max_radius = 5
+max_number_of_entities_permitted = 2000
 error_string = ""
+
+def point_shift(old_point, shift_values):
+    new_point = []
+    new_point.append(old_point[0] - shift_values[0])
+    new_point.append(old_point[1] - shift_values[1])
+    return new_point
 
 def find_max_x_y(points):
     x_values = []
@@ -225,14 +229,36 @@ if boundary_square_found:
                 # print "ERROR: ARC entity outside of bonudary square"
                 error_string = error_string + "6 "
 
-
-
-
 # attempt to detect discontinuities
 pass
 
-# count entities
-pass
+# check if there is too much stuff in the drawing
+number_of_entities = 0
+for e in modelspace:
+    number_of_entities += 1
+if number_of_entities > max_number_of_entities_permitted:
+    error_string += "8 "
+
+# Move all entities so that the bottom left of the boundary square is located at the origin.
+move_xy = square_max_min[0]
+for e in modelspace:
+    if e.dxftype() == "CIRCLE":
+        center_point = e.get_dxf_attrib("center")
+        center_point_new = point_shift(center_point, move_xy)
+        e.dxf.center = center_point_new
+    elif e.dxftype() == "ARC":
+        center_point = e.get_dxf_attrib("center")
+        center_point_new = point_shift(center_point, move_xy)
+        e.dxf.center = center_point_new
+    elif e.dxftype() == "LINE":
+        start_point = e.get_dxf_attrib("start")
+        end_point = e.get_dxf_attrib("end")
+        start_point_new = point_shift(start_point, move_xy)
+        end_point_new = point_shift(end_point, move_xy)
+        e.dxf.start = start_point_new
+        e.dxf.end = end_point_new
+    else:
+        error_string += "9 "
 
 # locate and draw wells
 wells_found = 0
@@ -247,9 +273,10 @@ for e in modelspace:
             wells_found = 1
 if not wells_found:
     # print "ERROR: no wells found"
-    error_string = error_string + "7 "
-# Move all entities so that the bottom left of the boundary square is located at the origin.
-pass
+    error_string += "7 "
+
+if error_string == "":
+    error_string = "0 "
 
 print error_string
 
