@@ -4,8 +4,8 @@ import sys
 
 if not len(sys.argv) == 2:
     print "WARNING: no filename entered as argument"
-    print "defaulting to test.dxf"
-    file_name = "far_from_origin.dxf"
+    print "defaulting to far_from_origin.dxf"
+    file_name = "new_owen.dxf"
 else:
     file_name = str(sys.argv[1])
 
@@ -240,25 +240,26 @@ if number_of_entities > max_number_of_entities_permitted:
     error_string += "8 "
 
 # Move all entities so that the bottom left of the boundary square is located at the origin.
-move_xy = square_max_min[0]
-for e in modelspace:
-    if e.dxftype() == "CIRCLE":
-        center_point = e.get_dxf_attrib("center")
-        center_point_new = point_shift(center_point, move_xy)
-        e.dxf.center = center_point_new
-    elif e.dxftype() == "ARC":
-        center_point = e.get_dxf_attrib("center")
-        center_point_new = point_shift(center_point, move_xy)
-        e.dxf.center = center_point_new
-    elif e.dxftype() == "LINE":
-        start_point = e.get_dxf_attrib("start")
-        end_point = e.get_dxf_attrib("end")
-        start_point_new = point_shift(start_point, move_xy)
-        end_point_new = point_shift(end_point, move_xy)
-        e.dxf.start = start_point_new
-        e.dxf.end = end_point_new
-    else:
-        error_string += "9 "
+if boundary_square_found:
+    move_xy = square_max_min[0]
+    for e in modelspace:
+        if e.dxftype() == "CIRCLE":
+            center_point = e.get_dxf_attrib("center")
+            center_point_new = point_shift(center_point, move_xy)
+            e.dxf.center = center_point_new
+        elif e.dxftype() == "ARC":
+            center_point = e.get_dxf_attrib("center")
+            center_point_new = point_shift(center_point, move_xy)
+            e.dxf.center = center_point_new
+        elif e.dxftype() == "LINE":
+            start_point = e.get_dxf_attrib("start")
+            end_point = e.get_dxf_attrib("end")
+            start_point_new = point_shift(start_point, move_xy)
+            end_point_new = point_shift(end_point, move_xy)
+            e.dxf.start = start_point_new
+            e.dxf.end = end_point_new
+        else:
+            error_string += "9 "
 
 # locate and draw wells
 wells_found = 0
