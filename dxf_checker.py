@@ -1,13 +1,24 @@
 import ezdxf
 import math
+import sys
+
+
+if not len(sys.argv) == 2:
+    print "ERROR: no filename entered as argument"
+    print "defaulting to test.dxf"
+    file_name = "test.dxf"
+else:
+    file_name = str(sys.argv[1])
+
+
 
 # parameter settings
-file_name = "square.dxf"
 laser_spot_diameter = 0.1  # mm - used as distance between concentric circles for filling in wells.
 max_permitted_boundary_square = 50.0  # mm
 boundary_square_expected_color = 240  # 240 = red
 well_expected_color = 240
 well_expected_max_radius = 5
+error_string = ""
 
 def find_max_x_y(points):
     x_values = []
@@ -135,12 +146,14 @@ if len(boundary_square_points) == 4:
     square_max_min = find_max_x_y(boundary_square_points)
     if square_max_min[1][0]-square_max_min[0][0] > max_permitted_boundary_square + 1 \
         or square_max_min[1][1]-square_max_min[0][1] > max_permitted_boundary_square + 1:
-        print "detected boundary size: " + str(square_max_min[1][0]-square_max_min[0][0]) \
-        + " mm x " + str(square_max_min[1][1]-square_max_min[0][1]) + " mm"
-        print "ERROR: boundary square too large - should be less than %s mm x %s mm" \
-              % (max_permitted_boundary_square, max_permitted_boundary_square)
+        # print "detected boundary size: " + str(square_max_min[1][0]-square_max_min[0][0]) \
+        # + " mm x " + str(square_max_min[1][1]-square_max_min[0][1]) + " mm"
+        # print "ERROR: boundary square too large - should be less than %s mm x %s mm" \
+        #       % (max_permitted_boundary_square, max_permitted_boundary_square)
+        error_string = error_string + "1 "
 else:
-    print "ERROR: no boundary square detected"
+    # print "ERROR: no boundary square detected"
+    error_string = error_string + "2 "
     boundary_square_found = 0
 
 # draw LINES instead of POLYLINES
@@ -172,8 +185,8 @@ while polylines_remaining:
 for e in modelspace:
     # print("DXF Entity: %s\n" % e.dxftype())
     if not (e.dxftype() == "LINE" or e.dxftype() == "ARC" or e.dxftype() == "VIEWPORT" or e.dxftype() == "CIRCLE"):
-        print "ERROR: illegal %s entity detected " % e.dxftype()
-
+        # print "ERROR: illegal %s entity detected " % e.dxftype()
+        error_string = error_string + "3 "
 # check design is within size limit but only if the boundary square was actually found
 if boundary_square_found:
     for e in modelspace:
@@ -185,7 +198,8 @@ if boundary_square_found:
                 or start_point[1] < square_max_min[0][1] \
                 or start_point[0] > square_max_min[1][0] \
                 or start_point[1] > square_max_min[1][1]:
-                print "ERROR: LINE entity outside of boundary square"
+                # print "ERROR: LINE entity outside of boundary square"
+                error_string = error_string + "4 "
         # check all CIRCLE entities
         elif e.dxftype() == "CIRCLE":
             center_point = e.get_dxf_attrib("center")
@@ -194,7 +208,8 @@ if boundary_square_found:
                 or (center_point[1] - radius_size) < square_max_min[0][1] \
                 or (center_point[0] + radius_size) > square_max_min[1][0] \
                 or (center_point[1] + radius_size) > square_max_min[1][1]:
-                print "ERROR: CIRCLE entity outside of boundary square"
+                # print "ERROR: CIRCLE entity outside of boundary square"
+                error_string = error_string + "5 "
         # check all ARC entities
         elif e.dxftype() == "ARC":
             center_point = e.get_dxf_attrib("center")
@@ -207,7 +222,8 @@ if boundary_square_found:
                     or max_min_points[0][1] < square_max_min[0][0] \
                     or max_min_points[1][0] > square_max_min[1][0] \
                     or max_min_points[1][1] > square_max_min[1][1]:
-                print "ERROR: ARC entity outside of bonudary square"
+                # print "ERROR: ARC entity outside of bonudary square"
+                error_string = error_string + "6 "
 
 
 
@@ -230,9 +246,12 @@ for e in modelspace:
                 modelspace.add_circle(center, radius-laser_spot_diameter*(i+1))
             wells_found = 1
 if not wells_found:
-    print "ERROR: no wells found"
-
+    # print "ERROR: no wells found"
+    error_string = error_string + "7 "
 # Move all entities so that the bottom left of the boundary square is located at the origin.
 pass
 
+print error_string
+
 dwg.saveas(file_name.replace('.dxf', '') + "_converted.dxf")
+
