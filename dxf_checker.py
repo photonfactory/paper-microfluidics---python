@@ -4,8 +4,8 @@ import sys
 
 if not len(sys.argv) == 2:
     print "WARNING: no filename entered as argument"
-    print "defaulting to far_from_origin.dxf"
     file_name = "new_owen.dxf"
+    print "defaulting to: " + file_name
 else:
     file_name = str(sys.argv[1])
 
